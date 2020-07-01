@@ -30,14 +30,11 @@ for (i in fname){
 ## Sort raster layers by month
 #r_layer[[k]]@z[[1]] ## date defined here
 
-for (k in 1:length(r_layer)){
-  jan <- r_layer[[k]]@z[[1]] == stringr::str_detect(r_layer[[k]]@z[[1]], pattern =  "\\d{4}\\-\\d{01}") 
-  return(ind)
-}
 
+jan1 <- lapply(1:length(r_layer), function(x)  stringr::str_detect(r_layer[[x]]@z[[1]], pattern =  "\\d{4}\\-01\\-\\d{2}")) ## returns true false
 
-
-
+jan <- lapply(1:length(r_layer), function(x)  dplyr::select(r_layer[[x]] == stringr::str_detect(r_layer[[x]]@z[[1]], ## error using select with rasters
+                                                                                                     pattern =  "\\d{4}\\-01\\-\\d{2}")))
 
 
 ## run spatial EWS
