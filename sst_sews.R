@@ -17,20 +17,23 @@ randomize_matrix_no_na <- function(mat) {
 
 ### read in monthly mean oisst files 
 raw.dir<-here::here("temp/data-raw")
+i<- here::here("temp/data-raw/mon_sst_1985_1989.nc")
 
-fname<-"mon_sst_2010_2019.nc"
+fname<- list.files(raw.dir, pattern='*.nc',full.names=TRUE)
+outstack<-raster::stack()
+for (i in fname){
+  r_stack <- raster::stack(fname)
+  raster::crs(r_stack) <- "+proj=longlat +lat_1=35 +lat_2=45 +lat_0=40 +lon_0=-77 +x_0=0 +y_0=0 +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0"
+  r_layer<-raster::unstack(r_stack) }
 
-r_stack <- raster::stack(file.path(raw.dir, fname))
-
-crs(r_stack) <- "+proj=longlat +lat_1=35 +lat_2=45 +lat_0=40 +lon_0=-77 +x_0=0 +y_0=0 +datum=NAD83 +no_defs +ellps=GRS80 +towgs84=0,0,0"
 
 ## Sort raster layers by month
-unst<-unstack(r_stack)
-for (i in 1:length(unst)){
-  ind<- unst[[i]]@data@names == stringr::str_detect(unst[[i]]@data@names, pattern = "\\d{4}\\.\\d{2}")
-  data[ind]
-}
+#r_layer[[k]]@z[[1]] ## date defined here
 
+for (k in 1:length(r_layer)){
+  jan <- r_layer[[k]]@z[[1]] == stringr::str_detect(r_layer[[k]]@z[[1]], pattern =  "\\d{4}\\-\\d{01}") 
+  return(ind)
+}
 
 
 
