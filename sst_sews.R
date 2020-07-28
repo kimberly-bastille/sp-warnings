@@ -15,6 +15,10 @@ randomize_matrix_no_na <- function(mat) {
   return(mat)
 }
 
+## Example arguements
+epu_name <- "GB"
+month_number <- 1
+
 
 run_plot_sews<- function(epu_name, month_number){
   ## set dirs
@@ -26,11 +30,12 @@ run_plot_sews<- function(epu_name, month_number){
   
   # Bring in epu polygons
   epu <- rgdal::readOGR(file.path(gis.dir, "EPU_NOESTUARIES.shp"), verbose = T)
-  crs(epu_shp) <- crs
+  crs(epu) <- crs
   
   ### read in monthly mean oisst files 
   fname<- list.files(raw.dir, pattern='*.nc',full.names=TRUE)
   for (i in fname){
+    #r_stack <- raster::stack(i)
     r_stack <- raster::stack(fname)
     raster::crop(r_stack, extent(280,300,30,50))
     r_stack <- raster::rotate(r_stack)
@@ -55,7 +60,9 @@ run_plot_sews<- function(epu_name, month_number){
     mon1<-raster::unstack(mon1)
     }
   
+  ### FIX ME!!! ###
   ## Run SEWS analysis
+  library(spatialwarningsGis)
   indices <- spatialwarnings::compute_indicator(mon1, fun = na_aware_ews,
                                               cg_subsize = 2) ##### Erroring out "Error in check_mat(mat) : NAs in provided matrix."
 
