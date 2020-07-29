@@ -8,6 +8,7 @@ na_aware_ews <- function(mat, cg_subsize) {
   c(skewness = skewness(as.vector(mat_coarse), na.rm = TRUE), 
     variance = var(as.vector(mat_coarse), na.rm = TRUE), 
     moran    = Moran(raster(mat_coarse)))
+   #moran    = Moran(raster(mat_coarse), na.rm = TRUE))
 }
 
 randomize_matrix_no_na <- function(mat) {
