@@ -18,7 +18,7 @@ randomize_matrix_no_na <- function(mat) {
 
 ## Example arguements
 epu_name <- "GB"
-month_number <- 1
+month_number <- 12
 
 
 run_plot_sews<- function(epu_name, month_number){
@@ -55,22 +55,27 @@ run_plot_sews<- function(epu_name, month_number){
   ## Select the month to be plotted
   mon<-raster::stack(monthlyRasters[[month_number]])
   
+  ### TEST CLOSE CROP SO AT LEAST IT WILL RUN
+  close_crop_gb <- as(extent(-71, -66, 40, 42), 'SpatialPolygons')
+  mon.test<-crop(mon, close_crop_gb)
+  mon.test<-unstack(mon.test)
+  ### MASK NOT WORKING 
   ## Cut to EPU of choice
-  for (j in 1:length(mon)){
-    mon1<-raster::mask(mon, epu[epu$EPU == epu_name,])
-    mon1<-raster::unstack(mon1)
-    }
-  
+  # for (j in 1:length(mon)){
+  #   mon1<-raster::mask(mon, epu[epu$EPU == epu_name,])
+  #   mon1<-raster::unstack(mon1)
+  #   }
+
   ### FIX ME!!! ###
   ## Run SEWS analysis
   library(spatialwarningsGis)
-  indices <- spatialwarnings::compute_indicator(mon1, fun = na_aware_ews,
+  indices <- spatialwarnings::compute_indicator(mon.test, fun = na_aware_ews,
                                               cg_subsize = 2) ##### Erroring out "Error in check_mat(mat) : NAs in provided matrix."
 
   indices_test <- spatialwarnings::indictest(indices,
                                            nulln = 999,
                                            null_method = randomize_matrix_no_na)
 
-  plot(indices_test)+ ggtitle(month_number, "oisst")
+  plot(indices_test)+ ggplot2::ggtitle(month_number, "oisst")
 
 }
