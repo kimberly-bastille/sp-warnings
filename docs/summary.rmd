@@ -1,0 +1,99 @@
+
+---
+title: "Spatial Early Warning Signals"
+author: "Kim Bastille"
+date: "xx/xx/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Results
+
+```{r setup, include=FALSE}
+library(knitr)
+plot.dir<- here::here("plots")
+
+```
+
+
+### By EPU {.tabset .tabset-fade}
+
+#### Gulf of Maine
+```{r gom, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
+```
+
+
+#### Georges Bank
+```{r gb, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
+```
+
+#### Mid-Atlantic Bight
+```{r mab, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
+```
+
+### By season {.tabset .tabset-fade}
+
+#### Winter
+```{r win, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
+```
+
+
+#### Spring
+```{r spr, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
+```
+
+#### Summer
+```{r sum, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
+```
+
+
+#### Fall
+```{r fall, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
+knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
+```
+
+
+
+## Data summary
+
+The data used to build plots comes from NOAA's physical science lab.  https://psl.noaa.gov/cgi-bin/db_search/DBListFiles.pl?did=132&tid=88124&vid=2423.
+
+
+spatial range = 0.25 degree latitude x 0.25 degree longitude global grid (1440x720) 
+temporaly range = 1982-2019. 
+
+Table of seasonal ranges
+1:90 <- Winter
+91:181 <- Spring
+182:273 <- Summer
+274:365 <- Fall
+
+Seasonal mean value calculated for each 1/4 degree raster. 
+
+
+## Data analysis
+Analysis run using `spatialwarnings`. 
