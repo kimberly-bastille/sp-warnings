@@ -28,6 +28,9 @@ fname<- list.files(csv.dir, pattern = ('.csv'),full.names=TRUE)
 
 dat <- ldply(fname, read.csv)
 
+# set levels for seasons
+dat$season <- factor(dat$season, levels = c("winter","spring", "summer", "fall"))
+
 # Plot data
 dat %>% 
   ggplot(aes(x = Year, y = variance))+
@@ -35,7 +38,8 @@ dat %>%
   geom_line(aes(color = season))+
   facet_wrap(~EPU)+
   ggtitle("OISST variance by EPU")+
-  theme_ts()
+  theme_ts()+
+  theme_facet()
   
   
 dat %>% 
@@ -44,9 +48,30 @@ dat %>%
   geom_line(aes(color = EPU))+
   facet_wrap(~season)+
   ggtitle("OISST variance by Season")+
-  theme_ts()
+  theme_ts()+
+  theme_facet()
 
 ```
+
+### Trends
+
+```{r trends,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+dat %>% 
+  ggplot(aes(x = Year, y = variance))+
+  geom_point()+
+  geom_line()+
+  facet_grid(EPU~season, scales = "free")+
+  geom_gls()+
+  theme_ts()+
+  theme_facet()+
+  ggtitle("OISST variance")
+  
+
+```
+
+
+
+
 
 
 
