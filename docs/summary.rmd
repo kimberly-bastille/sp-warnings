@@ -16,11 +16,45 @@ plot.dir<- here::here("plots")
 
 ```
 
+### Summary Plots
+```{r summary, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11} 
+library(tidyverse)
+library(plyr)
+library(ecodata)
+
+# read in all csvs
+csv.dir <- here::here("data")
+fname<- list.files(csv.dir, pattern = ('.csv'),full.names=TRUE)
+
+dat <- ldply(fname, read.csv)
+
+# Plot data
+dat %>% 
+  ggplot(aes(x = Year, y = variance))+
+  geom_point(aes(color = season))+
+  geom_line(aes(color = season))+
+  facet_wrap(~EPU)+
+  ggtitle("OISST variance by EPU")+
+  theme_ts()
+  
+  
+dat %>% 
+  ggplot(aes(x = Year, y = variance))+
+  geom_point(aes(color = EPU))+
+  geom_line(aes(color = EPU))+
+  facet_wrap(~season)+
+  ggtitle("OISST variance by Season")+
+  theme_ts()
+
+```
+
+
+
 
 ### By EPU {.tabset .tabset-fade}
 
 #### Gulf of Maine
-```{r gom, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r gom,  echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
@@ -29,7 +63,7 @@ knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
 
 
 #### Georges Bank
-```{r gb, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r gb, echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
@@ -37,7 +71,7 @@ knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
 ```
 
 #### Mid-Atlantic Bight
-```{r mab, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r mab, echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
@@ -47,7 +81,7 @@ knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
 ### By season {.tabset .tabset-fade}
 
 #### Winter
-```{r win, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r win, echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
@@ -55,14 +89,14 @@ knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
 
 
 #### Spring
-```{r spr, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r spr, echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
 ```
 
 #### Summer
-```{r sum, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r sum,echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
@@ -70,7 +104,7 @@ knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
 
 
 #### Fall
-```{r fall, fig.cap = "Condition factor for species sampled in MAB.", echo=FALSE}
+```{r fall, echo=FALSE}
 knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
 knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
