@@ -1,6 +1,6 @@
 
 ---
-title: "Spatial Early Warning Signals"
+title: "Spatial Early Warning Signals Results Summary"
 author: "Kim Bastille"
 date: "xx/xx/2020"
 output: html_document
@@ -8,55 +8,128 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Results
-
 ```{r setup, include=FALSE}
 library(knitr)
 plot.dir<- here::here("plots")
 
 ```
 
-### Summary Plots
-```{r summary, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11} 
+
+```{r plot-function,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(plyr)
 library(ecodata)
-
+library(patchwork)
 # read in all csvs
 csv.dir <- here::here("data")
-fname<- list.files(csv.dir, pattern = ('.csv'),full.names=TRUE)
 
-dat <- ldply(fname, read.csv)
-
-# set levels for seasons
-dat$season <- factor(dat$season, levels = c("winter","spring", "summer", "fall"))
-
-# Plot data
-dat %>% 
-  ggplot(aes(x = Year, y = variance))+
-  geom_point(aes(color = season))+
-  geom_line(aes(color = season))+
-  facet_wrap(~EPU)+
-  ggtitle("OISST variance by EPU")+
-  theme_ts()+
-  theme_facet()
+plot30plus<- function(epu_name, season_name, indicator){
   
-  
-dat %>% 
-  ggplot(aes(x = Year, y = variance))+
-  geom_point(aes(color = EPU))+
-  geom_line(aes(color = EPU))+
-  facet_wrap(~season)+
-  ggtitle("OISST variance by Season")+
-  theme_ts()+
-  theme_facet()
+  fname<- list.files(csv.dir, pattern = paste0(indicator,'.csv'),full.names=TRUE)
+  dat <- ldply(fname, read.csv)
+  epu.season<-dat %>% 
+    filter(EPU == epu_name) %>% 
+    filter(season == season_name)
+  p1<-epu.season %>%   
+    ggplot(aes(x = Year, y = variance))+
+    geom_point()+
+    geom_line()+
+    ecodata::geom_gls()+
+    theme_ts()+
+    theme_facet()+
+    theme(axis.text.x = element_blank(),
+          axis.ticks = element_blank(), 
+          axis.title.x = element_blank())+
+    ggtitle(paste(epu_name, season_name, indicator, " variance"))
+  p2<-epu.season %>%   
+    ggplot(aes(x = Year, y = skewness))+
+    geom_point()+
+    geom_line()+
+    geom_gls()+
+    theme_ts()+
+    theme_facet()+
+    ggtitle(paste(epu_name, season_name, indicator, " skewness"))
 
+  p1+p2+patchwork::plot_layout(ncol=1)
+}
+
+
+
+plot30less<- function(epu_name, season_name, indicator){
+  
+  fname<- list.files(csv.dir, pattern = paste0(indicator,'.csv'),full.names=TRUE)
+  dat <- ldply(fname, read.csv)
+  epu.season<-dat %>% 
+    filter(EPU == epu_name) %>% 
+    filter(season == season_name)
+  p1<-epu.season %>%   
+    ggplot(aes(x = Year, y = variance))+
+    geom_point()+
+    geom_line()+
+    #ecodata::geom_gls()+
+    theme_ts()+
+    theme(axis.text.x = element_blank(),
+          axis.ticks = element_blank(), 
+          axis.title.x = element_blank())+
+    theme_facet()+
+    ggtitle(paste(epu_name, season_name, indicator, " variance"))
+  p2<-epu.season %>%   
+    ggplot(aes(x = Year, y = skewness))+
+    geom_point()+
+    geom_line()+
+    #geom_gls()+
+    theme_ts()+
+    theme_facet()+
+    ggtitle(paste(epu_name, season_name, indicator, " skewness"))
+
+  p1+p2+patchwork::plot_layout(ncol=1)
+}
 ```
 
-### Trends
+
+
+
+## Variance and skewness by epu and indicator {.tabset .tabset-fade}
+
+### SST {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30plus("MAB", "winter", "sst")
+p2<-plot30plus("MAB", "spring", "sst")
+p3<-plot30plus("MAB", "summer", "sst")
+p4<-plot30plus("MAB", "fall", "sst")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30plus("GOM", "winter", "sst")
+p2<-plot30plus("GOM", "spring", "sst")
+p3<-plot30plus("GOM", "summer", "sst")
+p4<-plot30plus("GOM", "fall", "sst")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GB
+```{r GB-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
+p1<-plot30plus("GB", "winter", "sst")
+p2<-plot30plus("GB", "spring", "sst")
+p3<-plot30plus("GB", "summer", "sst")
+p4<-plot30plus("GB", "fall", "sst")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+#### SST Trends in variance and skewness
 
 ```{r trends,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-dat %>% 
+fname<- list.files(csv.dir, pattern = 'sst.csv',full.names=TRUE)
+  sst <- ldply(fname, read.csv)
+  sst %>% 
   ggplot(aes(x = Year, y = variance))+
   geom_point()+
   geom_line()+
@@ -66,79 +139,124 @@ dat %>%
   theme_facet()+
   ggtitle("OISST variance")
   
+  sst %>% 
+  ggplot(aes(x = Year, y = skewness))+
+  geom_point()+
+  geom_line()+
+  facet_grid(EPU~season, scales = "free")+
+  geom_gls()+
+  theme_ts()+
+  theme_facet()+
+  ggtitle("OISST skewness")
+  
+```
 
+
+### CHL a {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("MAB", "winter", "chl")
+p2<-plot30less("MAB", "spring", "chl")
+p3<-plot30less("MAB", "summer", "chl")
+p4<-plot30less("MAB", "fall", "chl")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GOM", "winter", "chl")
+p2<-plot30less("GOM", "spring", "chl")
+p3<-plot30less("GOM", "summer", "chl")
+p4<-plot30less("GOM", "fall", "chl")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GB
+```{r GB-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GB", "winter", "chl")
+p2<-plot30less("GB", "spring", "chl")
+p3<-plot30less("GB", "summer", "chl")
+p4<-plot30less("GB", "fall", "chl")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+### PPD {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("MAB", "winter", "pp")
+p2<-plot30less("MAB", "spring", "pp")
+p3<-plot30less("MAB", "summer", "pp")
+p4<-plot30less("MAB", "fall", "pp")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GOM", "winter", "pp")
+p2<-plot30less("GOM", "spring", "pp")
+p3<-plot30less("GOM", "summer", "pp")
+p4<-plot30less("GOM", "fall", "pp")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+#### GB
+```{r GB-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
+p1<-plot30less("GB", "winter", "pp")
+p2<-plot30less("GB", "spring", "pp")
+p3<-plot30less("GB", "summer", "pp")
+p4<-plot30less("GB", "fall", "pp")
+
+(p1 | p2)/(p3 | p4)
 ```
 
 
 
+<!-- ### By EPU {.tabset .tabset-fade} -->
 
 
 
+<!-- #### SST -->
+<!-- ##### Gulf of Maine -->
+<!-- ```{r gom,  echo=FALSE} -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png"))) -->
+<!-- ``` -->
 
 
-### By EPU {.tabset .tabset-fade}
+<!-- ##### Georges Bank -->
+<!-- ```{r gb, echo=FALSE} -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png"))) -->
+<!-- ``` -->
 
-#### Gulf of Maine
-```{r gom,  echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
-```
+<!-- ##### Mid-Atlantic Bight -->
+<!-- ```{r mab, echo=FALSE} -->
+<!-- knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png"))) -->
+<!-- knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png"))) -->
+<!-- ``` -->
 
-
-#### Georges Bank
-```{r gb, echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
-```
-
-#### Mid-Atlantic Bight
-```{r mab, echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
-```
-
-### By season {.tabset .tabset-fade}
-
-#### Winter
-```{r win, echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png")))
-```
-
-
-#### Spring
-```{r spr, echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png")))
-```
-
-#### Summer
-```{r sum,echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png")))
-```
-
-
-#### Fall
-```{r fall, echo=FALSE}
-knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png")))
-knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png")))
-```
 
 
 
 ## Data summary
 
+
+### SST
 The data used to build plots comes from NOAA's physical science lab.  https://psl.noaa.gov/cgi-bin/db_search/DBListFiles.pl?did=132&tid=88124&vid=2423.
 
 
@@ -153,6 +271,8 @@ Table of seasonal ranges
 
 Seasonal mean value calculated for each 1/4 degree raster. 
 
+### Chla and pp 
+Ask Kim H
 
 ## Data analysis
 Analysis run using `spatialwarnings`. 
