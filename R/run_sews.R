@@ -30,8 +30,8 @@ crs(epu) <- crs
 
 epu_name<-"MAB"
 season<-"spring"
-indicator<-"sst"
-year_start<-1982
+indicator<-"bt"
+year_start<-1994
 
 run_sews<- function(epu_name, season, indicator, year_start){
   library(raster)
@@ -132,3 +132,20 @@ run_sews("MAB", "winter", "sst", 1983)
 run_sews("MAB", "spring", "sst", 1983)
 run_sews("MAB", "summer", "sst", 1983)
 run_sews("MAB", "fall", "sst", 1983)
+
+
+## Bottom Temp
+run_sews("GOM", "winter", "bt", 1994)
+run_sews("GOM", "spring", "bt", 1994)
+run_sews("GOM", "summer", "bt", 1994)
+run_sews("GOM", "fall", "bt", 1994)
+
+run_sews("GB", "winter", "bt", 1994)
+run_sews("GB", "spring", "bt", 1994)
+run_sews("GB", "summer", "bt", 1994)
+run_sews("GB", "fall", "bt", 1994)
+
+run_sews("MAB", "winter", "bt", 1994)
+run_sews("MAB", "spring", "bt", 1994)
+run_sews("MAB", "summer", "bt", 1994)
+run_sews("MAB", "fall", "bt", 1994)
