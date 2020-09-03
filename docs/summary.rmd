@@ -1,8 +1,7 @@
 
 ---
 title: "Spatial Early Warning Signals Results Summary"
-author: "Kim Bastille"
-date: "xx/xx/2020"
+date: "`r format(Sys.Date(), '%e %B %Y')`"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -53,8 +52,6 @@ plot30plus<- function(epu_name, season_name, indicator){
   p1+p2+patchwork::plot_layout(ncol=1)
 }
 
-
-
 plot30less<- function(epu_name, season_name, indicator){
   
   fname<- list.files(csv.dir, pattern = paste0(indicator,'.csv'),full.names=TRUE)
@@ -66,7 +63,7 @@ plot30less<- function(epu_name, season_name, indicator){
     ggplot(aes(x = Year, y = variance))+
     geom_point()+
     geom_line()+
-    #ecodata::geom_gls()+
+    ecodata::geom_gls(linetype = "dashed")+
     theme_ts()+
     theme(axis.text.x = element_blank(),
           axis.ticks = element_blank(), 
@@ -77,7 +74,7 @@ plot30less<- function(epu_name, season_name, indicator){
     ggplot(aes(x = Year, y = skewness))+
     geom_point()+
     geom_line()+
-    #geom_gls()+
+    geom_gls(linetype = "dashed")+
     theme_ts()+
     theme_facet()+
     ggtitle(paste(epu_name, season_name, indicator, " skewness"))
@@ -217,6 +214,76 @@ p4<-plot30less("GB", "fall", "pp")
 
 (p1 | p2)/(p3 | p4)
 ```
+
+
+
+
+### CHL a Log Transformed {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("MAB", "winter", "chl_log")
+p2<-plot30less("MAB", "spring", "chl_log")
+p3<-plot30less("MAB", "summer", "chl_log")
+p4<-plot30less("MAB", "fall", "chl_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GOM", "winter", "chl_log")
+p2<-plot30less("GOM", "spring", "chl_log")
+p3<-plot30less("GOM", "summer", "chl_log")
+p4<-plot30less("GOM", "fall", "chl_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GB
+```{r GB-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GB", "winter", "chl_log")
+p2<-plot30less("GB", "spring", "chl_log")
+p3<-plot30less("GB", "summer", "chl_log")
+p4<-plot30less("GB", "fall", "chl_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+### PPD Log Transformed {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("MAB", "winter", "pp_log")
+p2<-plot30less("MAB", "spring", "pp_log")
+p3<-plot30less("MAB", "summer", "pp_log")
+p4<-plot30less("MAB", "fall", "pp_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GOM", "winter", "pp_log")
+p2<-plot30less("GOM", "spring", "pp_log")
+p3<-plot30less("GOM", "summer", "pp_log")
+p4<-plot30less("GOM", "fall", "pp_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+#### GB
+```{r GB-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
+p1<-plot30less("GB", "winter", "pp_log")
+p2<-plot30less("GB", "spring", "pp_log")
+p3<-plot30less("GB", "summer", "pp_log")
+p4<-plot30less("GB", "fall", "pp_log")
+
+(p1 | p2)/(p3 | p4)
+```
+
 
 
 ### PAR {.tabset .tabset-fade}

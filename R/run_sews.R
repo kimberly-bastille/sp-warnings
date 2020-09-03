@@ -116,6 +116,37 @@ run_sews("GOM", "spring", "pp", 1998)
 run_sews("GOM", "summer", "pp", 1998)
 run_sews("GOM", "fall", "pp", 1998)
 
+## CHLa Log
+run_sews("MAB", "winter", "chl_log", 1998)
+run_sews("MAB", "spring", "chl_log", 1998)
+run_sews("MAB", "summer", "chl_log", 1998)
+run_sews("MAB", "fall", "chl_log", 1998)
+
+run_sews("GB", "winter", "chl_log", 1998)
+run_sews("GB", "spring", "chl_log", 1998)
+run_sews("GB", "summer", "chl_log", 1998)
+run_sews("GB", "fall", "chl_log", 1998)
+
+run_sews("GOM", "winter", "chl_log", 1998)
+run_sews("GOM", "spring", "chl_log", 1998)
+run_sews("GOM", "summer", "chl_log", 1998)
+run_sews("GOM", "fall", "chl_log", 1998)
+
+## PP Log
+run_sews("MAB", "winter", "pp_log", 1998)
+run_sews("MAB", "spring", "pp_log", 1998)
+run_sews("MAB", "summer", "pp_log", 1998)
+run_sews("MAB", "fall", "pp_log", 1998)
+
+run_sews("GB", "winter", "pp_log", 1998)
+run_sews("GB", "spring", "pp_log", 1998)
+run_sews("GB", "summer", "pp_log", 1998)
+run_sews("GB", "fall", "pp_log", 1998)
+
+run_sews("GOM", "winter", "pp_log", 1998)
+run_sews("GOM", "spring", "pp_log", 1998)
+run_sews("GOM", "summer", "pp_log", 1998)
+run_sews("GOM", "fall", "pp_log", 1998)
 
 ## SST
 run_sews("GOM", "winter", "sst", 1983)
