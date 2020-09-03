@@ -219,6 +219,44 @@ p4<-plot30less("GB", "fall", "pp")
 ```
 
 
+### PAR {.tabset .tabset-fade}
+
+#### MAB
+```{r mab-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("MAB", "winter", "par")
+p2<-plot30less("MAB", "spring", "par")
+p3<-plot30less("MAB", "summer", "par")
+p4<-plot30less("MAB", "fall", "par")
+
+(p1 | p2)/(p3 | p4)
+```
+
+#### GOM
+```{r GOM-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-plot30less("GOM", "winter", "par")
+p2<-plot30less("GOM", "spring", "par")
+p3<-plot30less("GOM", "summer", "par")
+p4<-plot30less("GOM", "fall", "par")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+#### GB
+```{r GB-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
+p1<-plot30less("GB", "winter", "par")
+p2<-plot30less("GB", "spring", "par")
+p3<-plot30less("GB", "summer", "par")
+p4<-plot30less("GB", "fall", "par")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+
+
+
+
 ### Bottom Temp {.tabset .tabset-fade}
 
 #### MAB

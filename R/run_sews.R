@@ -29,9 +29,9 @@ epu <- rgdal::readOGR(file.path(gis.dir, "EPU_NOESTUARIES.shp"), verbose = T)
 crs(epu) <- crs
 
 epu_name<-"MAB"
-season<-"spring"
-indicator<-"bt"
-year_start<-1994
+season<-"winter"
+indicator<-"par"
+year_start<-1998
 
 run_sews<- function(epu_name, season, indicator, year_start){
   library(raster)
@@ -149,3 +149,21 @@ run_sews("MAB", "winter", "bt", 1994)
 run_sews("MAB", "spring", "bt", 1994)
 run_sews("MAB", "summer", "bt", 1994)
 run_sews("MAB", "fall", "bt", 1994)
+
+
+
+## PAR
+run_sews("MAB", "winter", "par", 1998)
+run_sews("MAB", "spring", "par", 1998)
+run_sews("MAB", "summer", "par", 1998)
+run_sews("MAB", "fall", "par", 1998)
+
+run_sews("GB", "winter", "par", 1998)
+run_sews("GB", "spring", "par", 1998)
+run_sews("GB", "summer", "par", 1998)
+run_sews("GB", "fall", "par", 1998)
+
+run_sews("GOM", "winter", "par", 1998)
+run_sews("GOM", "spring", "par", 1998)
+run_sews("GOM", "summer", "par", 1998)
+run_sews("GOM", "fall", "par", 1998)
