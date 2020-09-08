@@ -30,7 +30,7 @@ crs(epu) <- crs
 
 epu_name<-"MAB"
 season<-"winter"
-indicator<-"par"
+indicator<-"pp_log"
 year_start<-1998
 
 run_sews<- function(epu_name, season, indicator, year_start){
