@@ -72,22 +72,26 @@ ccf_test("GOM", "fall", "sst") # NO
 ###########################################################################
 
 ccf_test2<-function(epu_name, season_name, indicator){
-  zoo <- ecodata::zoo_abund %>% 
+  zoo <- read.csv(here::here("data/zooplankton.csv")) %>% 
     filter(EPU == epu_name,
-         Time >= 1998, 
-         Var == "large")
+           season == season_name,
+           zoo_name == "Large")
 
-pp <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
-  filter(Year <= 2018)
+pp <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) 
 
-cc <- ccf(pp$variance, test$mean)
+intsect<-intersect(zoo$year, pp$Year)
+
+pp1<- pp %>% filter(Year %in% intsect)
+zoo1<-zoo %>% filter(year %in% intsect)
+
+cc <- ccf(pp1$variance, zoo1$anom1)
 print(cc)
 
 
-p1<- zoo %>%
+p1<- zoo1 %>%
   ggplot()+
-  geom_line(aes(x =  Time, y = Value, color = "Zoo abundance"))+
-  geom_line(aes(x= pp$Year, y = pp$variance, color = "PP Variance"))+
+  geom_line(aes(x =  year, y = anom1, color = "Zoo abundance"))+
+  geom_line(aes(x= pp1$Year, y = pp1$variance, color = "PP Variance"))+
   ggtitle(paste("PPD~Zoo CCF", epu_name, season_name ))
 p1
 
@@ -108,5 +112,22 @@ ccf_test2("GOM", "winter", "pp") # NO
 ccf_test2("GOM", "spring", "pp") # NO
 ccf_test2("GOM", "summer", "pp") # 8
 ccf_test2("GOM", "fall", "pp") # -6, 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
