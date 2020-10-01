@@ -19,8 +19,16 @@ library(tidyverse)
 library(plyr)
 library(ecodata)
 library(patchwork)
+library(gridExtra)
+
+
 # read in all csvs
 csv.dir <- here::here("data")
+data.dir <- here::here("data//")
+# epu_name = "MAB"
+# season_name = "spring"
+# indicator = "pp"
+
 
 plot30plus<- function(epu_name, season_name, indicator){
   
@@ -31,25 +39,20 @@ plot30plus<- function(epu_name, season_name, indicator){
     filter(season == season_name)
   p1<-epu.season %>%   
     ggplot(aes(x = Year, y = variance))+
-    geom_point()+
-    geom_line()+
-    ecodata::geom_gls()+
+    geom_point(aes(x = Year, y = variance, color = "var"))+
+    geom_line(aes(x = Year, y = variance, color = "var"))+
+    geom_point(aes(x = Year, y = skewness, color = "skew"))+
+    geom_line(aes(x = Year, y = skewness, color = "skew"))+
+    ecodata::geom_gls(aes(x = Year, y = variance))+
+    ecodata::geom_gls(aes(x = Year, y = skewness))+
     theme_ts()+
     theme_facet()+
     theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
           axis.ticks = element_blank(), 
           axis.title.x = element_blank())+
-    ggtitle(paste(epu_name, season_name, indicator, " variance"))
-  p2<-epu.season %>%   
-    ggplot(aes(x = Year, y = skewness))+
-    geom_point()+
-    geom_line()+
-    geom_gls()+
-    theme_ts()+
-    theme_facet()+
-    ggtitle(paste(epu_name, season_name, indicator, " skewness"))
-
-  p1+p2+patchwork::plot_layout(ncol=1)
+    ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
+  p1
 }
 
 plot30less<- function(epu_name, season_name, indicator){
@@ -60,37 +63,129 @@ plot30less<- function(epu_name, season_name, indicator){
     filter(EPU == epu_name) %>% 
     filter(season == season_name)
   p1<-epu.season %>%   
-    ggplot(aes(x = Year, y = variance))+
-    geom_point()+
-    geom_line()+
-    ecodata::geom_gls(linetype = "dashed")+
+    ggplot()+
+    geom_point(aes(x = Year, y = variance, color = "var"))+
+    geom_line(aes(x = Year, y = variance, color = "var"))+
+    geom_point(aes(x = Year, y = skewness, color = "skew"))+
+    geom_line(aes(x = Year, y = skewness, color = "skew"))+
+    ecodata::geom_gls(aes(x = Year, y = variance), linetype = "dashed")+
+    ecodata::geom_gls(aes(x = Year, y = skewness), linetype = "dashed")+
     theme_ts()+
     theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
           axis.ticks = element_blank(), 
           axis.title.x = element_blank())+
     theme_facet()+
-    ggtitle(paste(epu_name, season_name, indicator, " variance"))
-  p2<-epu.season %>%   
-    ggplot(aes(x = Year, y = skewness))+
-    geom_point()+
-    geom_line()+
-    geom_gls(linetype = "dashed")+
-    theme_ts()+
-    theme_facet()+
-    ggtitle(paste(epu_name, season_name, indicator, " skewness"))
-
-  p1+p2+patchwork::plot_layout(ncol=1)
+    ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
+  p1
 }
+
+## CCF for PPD and ZOO
+pp_zoo_test<-function(epu_name, season_name, indicator){
+zoo <- read.csv(here::here("data/zooplankton.csv")) %>% 
+    filter(EPU == epu_name,
+           season == season_name,
+           zoo_name == "Large") # calanus
+
+pp <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) 
+
+intsect<-intersect(zoo$year, pp$Year)
+
+pp1<- pp %>% filter(Year %in% intsect)
+zoo1<-zoo %>% filter(year %in% intsect)
+
+test1<-cor.test(pp1$skewness,  zoo1$anom1, method = "pearson")
+test2<-cor.test(pp1$variance,  zoo1$anom1, method = "pearson")
+
+p1<- zoo1 %>%
+  ggplot()+
+  geom_line(aes(x =  year, y = anom1, color = "Zoo abundance"))+
+  geom_line(aes(x= pp1$Year, y = pp1$variance, color = "PP Variance"))+
+  geom_line(aes(x= pp1$Year, y = pp1$skewness, color = "PP Skewness"))+
+  ecodata::geom_gls(aes(x = pp1$Year, y = pp1$variance), linetype = "dashed")+
+  ecodata::geom_gls(aes(x = pp1$Year, y = pp1$skewness), linetype = "dashed")+
+  ggtitle(paste("PPD~Zoo CCF", epu_name, season_name ))
+p1
+#test1,test2
+}
+
+## PPD prep
+pp <- ecodata::chl_pp %>% 
+  filter(str_detect(Var, "MONTHLY_PPD"), 
+         !str_detect(Time, "1997")) %>% 
+  tidyr::extract(Time, into = c("Year", "Month"), "(.{4})(.{2})") %>% 
+  mutate(
+    Season = case_when(
+      Month %in% c("10", "11", "12") ~ "fall",
+      Month %in% c("01", "02", "03")  ~ "winter",
+      Month %in% c("04", "05", "06")  ~ "spring",
+      TRUE ~ "summer"), 
+    Year = as.numeric(Year))%>% 
+  dplyr::group_by(Season, EPU, Year) %>% 
+  dplyr::summarise(index = mean(Value)) %>% 
+  dplyr::mutate(anom.index = mean(index) - index) %>% 
+  ungroup()
+
+### CCF
+ccf_test<-function(epu_name, season_name, indicator){
+  data.dir<-here::here("data//")
+test<- pp %>% 
+  filter(EPU == epu_name, 
+         Season == season_name)
+
+sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
+  left_join(test) %>% 
+  dplyr::mutate(anom.var = mean(variance) - variance, 
+                anom.skew = mean(skewness) - skewness) 
+
+ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
+ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+  dplyr::filter(val >= 0.42) %>% 
+  dplyr::select(!val) %>% 
+  dplyr::mutate(comp = c("var~index"))
+
+
+ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
+ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+  filter(val >= 0.42) %>% 
+  select(!val)%>% 
+  dplyr::mutate(comp = c("skew~index")) %>% 
+  dplyr::bind_rows(ccf.df)
+
+ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
+sews2<- sews %>% 
+  tidyr::pivot_longer( cols = starts_with("anom"), 
+                       names_to = "Variable", 
+                       values_to = "Values") %>% 
+  dplyr::mutate(Variable = factor(Variable, levels= c("anom.var", "anom.skew", "anom.index"),
+                                  labels = c("Variance", "Skewness", "Index")))
+p1<- sews2 %>%
+  filter(EPU == epu_name,
+         Season == season_name) %>%
+  ggplot()+
+  geom_line(aes(x = Year, y = Values))+
+  geom_point(aes(x = Year, y = Values))+
+  facet_wrap(.~Variable, ncol = 1, scales = "free")+
+  ggtitle(paste(indicator, epu_name, season_name ))
+
+grid.arrange(p1, ccf.df.grob,
+             nrow=2,
+             as.table=TRUE,
+             heights=c(3,1))
+}
+
 ```
 
 
 
 
-## Variance and skewness by epu and indicator {.tabset .tabset-fade}
+# Variance and skewness by epu and indicator {.tabset .tabset-fade}
 
-### SST {.tabset .tabset-fade}
+## SST {.tabset .tabset-fade}
 
-#### MAB
+### MAB
 ```{r mab-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30plus("MAB", "winter", "sst")
 p2<-plot30plus("MAB", "spring", "sst")
@@ -100,7 +195,7 @@ p4<-plot30plus("MAB", "fall", "sst")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30plus("GOM", "winter", "sst")
 p2<-plot30plus("GOM", "spring", "sst")
@@ -110,7 +205,7 @@ p4<-plot30plus("GOM", "fall", "sst")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GB
+### GB
 ```{r GB-sst, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
 p1<-plot30plus("GB", "winter", "sst")
 p2<-plot30plus("GB", "spring", "sst")
@@ -121,7 +216,7 @@ p4<-plot30plus("GB", "fall", "sst")
 ```
 
 
-#### SST Trends in variance and skewness
+### SST Trends in variance and skewness
 
 ```{r trends,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 fname<- list.files(csv.dir, pattern = 'sst.csv',full.names=TRUE)
@@ -149,9 +244,9 @@ fname<- list.files(csv.dir, pattern = 'sst.csv',full.names=TRUE)
 ```
 
 
-### CHL a {.tabset .tabset-fade}
+## CHL a {.tabset .tabset-fade}
 
-#### MAB
+### MAB
 ```{r mab-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "chl")
 p2<-plot30less("MAB", "spring", "chl")
@@ -161,7 +256,7 @@ p4<-plot30less("MAB", "fall", "chl")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "chl")
 p2<-plot30less("GOM", "spring", "chl")
@@ -171,7 +266,7 @@ p4<-plot30less("GOM", "fall", "chl")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GB
+### GB
 ```{r GB-chl, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "chl")
 p2<-plot30less("GB", "spring", "chl")
@@ -182,9 +277,38 @@ p4<-plot30less("GB", "fall", "chl")
 ```
 
 
-### PPD {.tabset .tabset-fade}
+## PPD {.tabset .tabset-fade}
 
-#### MAB
+### CCF 
+```{r mab-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+##### What does this mean??
+ccf_test("MAB", "winter", "pp") 
+ccf_test("MAB", "spring", "pp") 
+ccf_test("MAB", "summer", "pp") 
+ccf_test("MAB", "fall", "pp") 
+```
+
+```{r gb-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GB", "winter", "pp") 
+ccf_test("GB", "spring", "pp") 
+ccf_test("GB", "summer", "pp") 
+ccf_test("GB", "fall", "pp") 
+```
+
+```{r gom-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GOM", "winter", "pp") 
+ccf_test("GOM", "spring", "pp") 
+ccf_test("GOM", "summer", "pp") 
+ccf_test("GOM", "fall", "pp") 
+```
+
+
+
+
+
+### MAB
+
+#### SEWS
 ```{r mab-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "pp")
 p2<-plot30less("MAB", "spring", "pp")
@@ -194,7 +318,18 @@ p4<-plot30less("MAB", "fall", "pp")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+#### PP ~ Zoo abundance
+```{r mab-pp-zoo, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-pp_zoo_test("MAB", "winter", "pp")
+p2<-pp_zoo_test("MAB", "spring", "pp")
+p3<-pp_zoo_test("MAB", "summer", "pp")
+p4<-pp_zoo_test("MAB", "fall", "pp")
+
+(p1 | p2)/(p3 | p4)
+```
+
+
+### GOM
 ```{r GOM-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "pp")
 p2<-plot30less("GOM", "spring", "pp")
@@ -204,8 +339,17 @@ p4<-plot30less("GOM", "fall", "pp")
 (p1 | p2)/(p3 | p4)
 ```
 
+#### PP ~ Zoo abundance
+```{r gom-pp-zoo, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-pp_zoo_test("GOM", "winter", "pp")
+p2<-pp_zoo_test("GOM", "spring", "pp")
+p3<-pp_zoo_test("GOM", "summer", "pp")
+p4<-pp_zoo_test("GOM", "fall", "pp")
 
-#### GB
+(p1 | p2)/(p3 | p4)
+```
+
+### GB
 ```{r GB-pp, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "pp")
 p2<-plot30less("GB", "spring", "pp")
@@ -215,12 +359,20 @@ p4<-plot30less("GB", "fall", "pp")
 (p1 | p2)/(p3 | p4)
 ```
 
+#### PP ~ Zoo abundance
+```{r gb-pp-zoo, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+p1<-pp_zoo_test("GB", "winter", "pp")
+p2<-pp_zoo_test("GB", "spring", "pp")
+p3<-pp_zoo_test("GB", "summer", "pp")
+p4<-pp_zoo_test("GB", "fall", "pp")
+
+(p1 | p2)/(p3 | p4)
+```
 
 
+## CHL a Log Transformed {.tabset .tabset-fade}
 
-### CHL a Log Transformed {.tabset .tabset-fade}
-
-#### MAB
+### MAB
 ```{r mab-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "chl_log")
 p2<-plot30less("MAB", "spring", "chl_log")
@@ -230,7 +382,7 @@ p4<-plot30less("MAB", "fall", "chl_log")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "chl_log")
 p2<-plot30less("GOM", "spring", "chl_log")
@@ -240,7 +392,7 @@ p4<-plot30less("GOM", "fall", "chl_log")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GB
+### GB
 ```{r GB-chl_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "chl_log")
 p2<-plot30less("GB", "spring", "chl_log")
@@ -251,9 +403,9 @@ p4<-plot30less("GB", "fall", "chl_log")
 ```
 
 
-### PPD Log Transformed {.tabset .tabset-fade}
+## PPD Log Transformed {.tabset .tabset-fade}
 
-#### MAB
+### MAB
 ```{r mab-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "pp_log")
 p2<-plot30less("MAB", "spring", "pp_log")
@@ -263,7 +415,7 @@ p4<-plot30less("MAB", "fall", "pp_log")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "pp_log")
 p2<-plot30less("GOM", "spring", "pp_log")
@@ -274,7 +426,7 @@ p4<-plot30less("GOM", "fall", "pp_log")
 ```
 
 
-#### GB
+### GB
 ```{r GB-pp_log, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "pp_log")
 p2<-plot30less("GB", "spring", "pp_log")
@@ -286,9 +438,9 @@ p4<-plot30less("GB", "fall", "pp_log")
 
 
 
-### PAR {.tabset .tabset-fade}
+## PAR {.tabset .tabset-fade}
 
-#### MAB
+### MAB
 ```{r mab-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "par")
 p2<-plot30less("MAB", "spring", "par")
@@ -298,7 +450,7 @@ p4<-plot30less("MAB", "fall", "par")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "par")
 p2<-plot30less("GOM", "spring", "par")
@@ -309,7 +461,7 @@ p4<-plot30less("GOM", "fall", "par")
 ```
 
 
-#### GB
+### GB
 ```{r GB-par, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "par")
 p2<-plot30less("GB", "spring", "par")
@@ -324,9 +476,9 @@ p4<-plot30less("GB", "fall", "par")
 
 
 
-### Bottom Temp {.tabset .tabset-fade}
+## Bottom Temp {.tabset .tabset-fade}
 
-#### MAB
+### MAB
 ```{r mab-bt, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("MAB", "winter", "bt")
 p2<-plot30less("MAB", "spring", "bt")
@@ -336,7 +488,7 @@ p4<-plot30less("MAB", "fall", "bt")
 (p1 | p2)/(p3 | p4)
 ```
 
-#### GOM
+### GOM
 ```{r GOM-bt, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
 p1<-plot30less("GOM", "winter", "bt")
 p2<-plot30less("GOM", "spring", "bt")
@@ -347,7 +499,7 @@ p4<-plot30less("GOM", "fall", "bt")
 ```
 
 
-#### GB
+### GB
 ```{r GB-bt, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE,fig.width=11, fig.height=12} 
 p1<-plot30less("GB", "winter", "bt")
 p2<-plot30less("GB", "spring", "bt")
@@ -358,35 +510,7 @@ p4<-plot30less("GB", "fall", "bt")
 ```
 
 
-<!-- ### By EPU {.tabset .tabset-fade} -->
 
-
-
-<!-- #### SST -->
-<!-- ##### Gulf of Maine -->
-<!-- ```{r gom,  echo=FALSE} -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GOM winter _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GOM spring _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GOM summer _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GOM fall _OISST.png"))) -->
-<!-- ``` -->
-
-
-<!-- ##### Georges Bank -->
-<!-- ```{r gb, echo=FALSE} -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GB winter _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GB spring _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GB summer _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/GB fall _OISST.png"))) -->
-<!-- ``` -->
-
-<!-- ##### Mid-Atlantic Bight -->
-<!-- ```{r mab, echo=FALSE} -->
-<!-- knitr::include_graphics(file.path(here::here("plots/MAB winter _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/MAB spring _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/MAB summer _OISST.png"))) -->
-<!-- knitr::include_graphics(file.path(here::here("plots/MAB fall _OISST.png"))) -->
-<!-- ``` -->
 
 
 
