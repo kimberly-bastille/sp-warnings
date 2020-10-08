@@ -47,10 +47,10 @@ plot30plus<- function(epu_name, season_name, indicator){
     ecodata::geom_gls(aes(x = Year, y = skewness))+
     theme_ts()+
     theme_facet()+
-    theme(axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(), 
-          axis.title.x = element_blank())+
+    #theme(axis.text.x = element_blank(),
+    #      axis.text.y = element_blank(),
+    #      axis.ticks = element_blank(), 
+    #      axis.title.x = element_blank())+
     ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
   p1
 }
@@ -71,10 +71,10 @@ plot30less<- function(epu_name, season_name, indicator){
     ecodata::geom_gls(aes(x = Year, y = variance), linetype = "dashed")+
     ecodata::geom_gls(aes(x = Year, y = skewness), linetype = "dashed")+
     theme_ts()+
-    theme(axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(), 
-          axis.title.x = element_blank())+
+    #theme(axis.text.x = element_blank(),
+    #      axis.text.y = element_blank(),
+    #      axis.ticks = element_blank(), 
+    #      axis.title.x = element_blank())+
     theme_facet()+
     ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
   p1
@@ -141,7 +141,7 @@ sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",ind
 ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
 ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
   dplyr::mutate(val = abs(CCF)) %>% 
-  dplyr::filter(val >= 0.42) %>% 
+  dplyr::filter(val > 0.42) %>% 
   dplyr::select(!val) %>% 
   dplyr::mutate(comp = c("var~index"))
 
@@ -149,7 +149,7 @@ ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>%
 ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
 ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
   dplyr::mutate(val = abs(CCF)) %>% 
-  filter(val >= 0.42) %>% 
+   dplyr::filter(val > 0.42) %>% 
   select(!val)%>% 
   dplyr::mutate(comp = c("skew~index")) %>% 
   dplyr::bind_rows(ccf.df)
