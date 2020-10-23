@@ -1,0 +1,294 @@
+---
+title: "Spatial Early Warning Signals Results Summary - CCF"
+date: "`r format(Sys.Date(), '%e %B %Y')`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+plot.dir<- here::here("plots")
+
+```
+
+```{r plot-function,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plyr)
+library(ecodata)
+library(patchwork)
+library(gridExtra)
+
+
+# read in all csvs
+csv.dir <- here::here("data")
+data.dir <- here::here("data//")
+# epu_name = "MAB"
+# season_name = "spring"
+# indicator = "pp"
+
+
+plot30plus<- function(epu_name, season_name, indicator){
+  
+  fname<- list.files(csv.dir, pattern = paste0(indicator,'.csv'),full.names=TRUE)
+  dat <- ldply(fname, read.csv)
+  epu.season<-dat %>% 
+    filter(EPU == epu_name) %>% 
+    filter(season == season_name)
+  p1<-epu.season %>%   
+    ggplot(aes(x = Year, y = variance))+
+    geom_point(aes(x = Year, y = variance, color = "var"))+
+    geom_line(aes(x = Year, y = variance, color = "var"))+
+    geom_point(aes(x = Year, y = skewness, color = "skew"))+
+    geom_line(aes(x = Year, y = skewness, color = "skew"))+
+    ecodata::geom_gls(aes(x = Year, y = variance))+
+    ecodata::geom_gls(aes(x = Year, y = skewness))+
+    theme_ts()+
+    theme_facet()+
+    #theme(axis.text.x = element_blank(),
+    #      axis.text.y = element_blank(),
+    #      axis.ticks = element_blank(), 
+    #      axis.title.x = element_blank())+
+    ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
+  p1
+}
+
+plot30less<- function(epu_name, season_name, indicator){
+  
+  fname<- list.files(csv.dir, pattern = paste0(indicator,'.csv'),full.names=TRUE)
+  dat <- ldply(fname, read.csv)
+  epu.season<-dat %>% 
+    filter(EPU == epu_name) %>% 
+    filter(season == season_name)
+  p1<-epu.season %>%   
+    ggplot()+
+    geom_point(aes(x = Year, y = variance, color = "var"))+
+    geom_line(aes(x = Year, y = variance, color = "var"))+
+    geom_point(aes(x = Year, y = skewness, color = "skew"))+
+    geom_line(aes(x = Year, y = skewness, color = "skew"))+
+    ecodata::geom_gls(aes(x = Year, y = variance), linetype = "dashed")+
+    ecodata::geom_gls(aes(x = Year, y = skewness), linetype = "dashed")+
+    theme_ts()+
+    #theme(axis.text.x = element_blank(),
+    #      axis.text.y = element_blank(),
+    #      axis.ticks = element_blank(), 
+    #      axis.title.x = element_blank())+
+    theme_facet()+
+    ggtitle(paste(epu_name, season_name, indicator, " SEWS"))
+  p1
+}
+
+## CCF for PPD and ZOO
+pp_zoo_test<-function(epu_name, season_name, indicator){
+zoo <- read.csv(here::here("data/zooplankton.csv")) %>% 
+    filter(EPU == epu_name,
+           season == season_name,
+           zoo_name == "Large") # calanus
+
+pp <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) 
+
+intsect<-intersect(zoo$year, pp$Year)
+
+pp1<- pp %>% filter(Year %in% intsect)
+zoo1<-zoo %>% filter(year %in% intsect)
+
+test1<-cor.test(pp1$skewness,  zoo1$anom1, method = "pearson")
+test2<-cor.test(pp1$variance,  zoo1$anom1, method = "pearson")
+
+p1<- zoo1 %>%
+  ggplot()+
+  geom_line(aes(x =  year, y = anom1, color = "Zoo abundance"))+
+  geom_line(aes(x= pp1$Year, y = pp1$variance, color = "PP Variance"))+
+  geom_line(aes(x= pp1$Year, y = pp1$skewness, color = "PP Skewness"))+
+  ecodata::geom_gls(aes(x = pp1$Year, y = pp1$variance), linetype = "dashed")+
+  ecodata::geom_gls(aes(x = pp1$Year, y = pp1$skewness), linetype = "dashed")+
+  ggtitle(paste("PPD~Zoo CCF", epu_name, season_name ))
+p1
+#test1,test2
+}
+
+## PPD prep
+pp <- ecodata::chl_pp %>% 
+  filter(str_detect(Var, "MONTHLY_PPD"), 
+         !str_detect(Time, "1997")) %>% 
+  tidyr::extract(Time, into = c("Year", "Month"), "(.{4})(.{2})") %>% 
+  mutate(
+    Season = case_when(
+      Month %in% c("10", "11", "12") ~ "fall",
+      Month %in% c("01", "02", "03")  ~ "winter",
+      Month %in% c("04", "05", "06")  ~ "spring",
+      TRUE ~ "summer"), 
+    Year = as.numeric(Year))%>% 
+  dplyr::group_by(Season, EPU, Year) %>% 
+  dplyr::summarise(index = mean(Value)) %>% 
+  dplyr::mutate(anom.index = mean(index) - index) %>% 
+  ungroup()
+
+## chl prep
+chl <- ecodata::chl_pp %>% 
+  filter(str_detect(Var, "MONTHLY_CHL"), 
+         !str_detect(Time, "1997")) %>% 
+  tidyr::extract(Time, into = c("Year", "Month"), "(.{4})(.{2})") %>% 
+  mutate(
+    Season = case_when(
+      Month %in% c("10", "11", "12") ~ "fall",
+      Month %in% c("01", "02", "03")  ~ "winter",
+      Month %in% c("04", "05", "06")  ~ "spring",
+      TRUE ~ "summer"), 
+    Year = as.numeric(Year))%>% 
+  dplyr::group_by(Season, EPU, Year) %>% 
+  dplyr::summarise(index = mean(Value)) %>% 
+  dplyr::mutate(anom.index = mean(index) - index) %>% 
+  ungroup()
+
+### CCF
+ccf_test<-function(epu_name, season_name, indicator, comp.data){
+  data.dir<-here::here("data//")
+test<- comp.data %>% 
+  filter(EPU == epu_name, 
+         Season == season_name)
+
+sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
+  left_join(test) %>% 
+  dplyr::mutate(anom.var = mean(variance) - variance, 
+                anom.skew = mean(skewness) - skewness) 
+
+ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
+ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+  dplyr::filter(val > 0.42) %>% 
+  dplyr::select(!val) %>% 
+  dplyr::mutate(comp = c("var~index"))
+
+
+ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
+ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+   dplyr::filter(val > 0.42) %>% 
+  select(!val)%>% 
+  dplyr::mutate(comp = c("skew~index")) %>% 
+  dplyr::bind_rows(ccf.df)
+
+ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
+sews2<- sews %>% 
+  tidyr::pivot_longer( cols = starts_with("anom"), 
+                       names_to = "Variable", 
+                       values_to = "Values") %>% 
+  dplyr::mutate(Variable = factor(Variable, levels= c("anom.var", "anom.skew", "anom.index"),
+                                  labels = c("Variance", "Skewness", "Index")))
+p1<- sews2 %>%
+  filter(EPU == epu_name,
+         Season == season_name) %>%
+  ggplot()+
+  geom_line(aes(x = Year, y = Values))+
+  geom_point(aes(x = Year, y = Values))+
+  facet_wrap(.~Variable, ncol = 1, scales = "free")+
+  ggtitle(paste(indicator, epu_name, season_name ))
+
+grid.arrange(p1, ccf.df.grob,
+             nrow=2,
+             as.table=TRUE,
+             heights=c(3,1))
+}
+
+```
+
+# Variance and skewness by epu and indicator {.tabset .tabset-fade}
+
+## SST {.tabset .tabset-fade}
+
+### MAB
+
+### GB
+
+### GOM
+
+## Chl a {.tabset .tabset-fade}
+
+### MAB
+```{r mab-chl-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+##### What does this mean??
+#ccf_test("MAB", "winter", "chl", chl) 
+ccf_test("MAB", "spring", "chl", chl) 
+ccf_test("MAB", "summer", "chl", chl) 
+ccf_test("MAB", "fall", "chl", chl) 
+
+
+```
+
+### GB
+```{r gb-chl-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GB", "winter", "chl", chl) 
+#ccf_test("GB", "spring", "chl", chl) 
+ccf_test("GB", "summer", "chl", chl) 
+ccf_test("GB", "fall", "chl", chl) 
+```
+
+### GOM
+```{r gom-chl-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GOM", "winter", "chl", chl) 
+ccf_test("GOM", "spring", "chl", chl) 
+ccf_test("GOM", "summer", "chl", chl) 
+ccf_test("GOM", "fall", "chl", chl) 
+```
+
+## PPD {.tabset .tabset-fade}
+
+### MAB
+```{r mab-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+##### What does this mean??
+ccf_test("MAB", "winter", "pp", pp) 
+ccf_test("MAB", "spring", "pp", pp) 
+ccf_test("MAB", "summer", "pp", pp) 
+ccf_test("MAB", "fall", "pp", pp) 
+
+
+```
+
+### GB
+```{r gb-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GB", "winter", "pp", pp) 
+ccf_test("GB", "spring", "pp", pp) 
+ccf_test("GB", "summer", "pp", pp) 
+ccf_test("GB", "fall", "pp", pp) 
+```
+
+### GOM
+```{r gom-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
+ccf_test("GOM", "winter", "pp", pp) 
+ccf_test("GOM", "spring", "pp", pp) 
+ccf_test("GOM", "summer", "pp", pp) 
+ccf_test("GOM", "fall", "pp", pp) 
+```
+
+## Chl a log trans {.tabset .tabset-fade}
+
+### MAB
+
+### GB
+
+### GOM
+
+## PPD log trans {.tabset .tabset-fade}
+
+### MAB
+
+### GB
+
+### GOM
+
+## PAR {.tabset .tabset-fade}
+
+### MAB
+
+### GB
+
+### GOM
+
+## Bottom Temp {.tabset .tabset-fade}
+
+### MAB
+
+### GB
+
+### GOM
