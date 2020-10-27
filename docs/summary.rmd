@@ -109,72 +109,7 @@ p1
 #test1,test2
 }
 
-## PPD prep
-pp <- ecodata::chl_pp %>% 
-  filter(str_detect(Var, "MONTHLY_PPD"), 
-         !str_detect(Time, "1997")) %>% 
-  tidyr::extract(Time, into = c("Year", "Month"), "(.{4})(.{2})") %>% 
-  mutate(
-    Season = case_when(
-      Month %in% c("10", "11", "12") ~ "fall",
-      Month %in% c("01", "02", "03")  ~ "winter",
-      Month %in% c("04", "05", "06")  ~ "spring",
-      TRUE ~ "summer"), 
-    Year = as.numeric(Year))%>% 
-  dplyr::group_by(Season, EPU, Year) %>% 
-  dplyr::summarise(index = mean(Value)) %>% 
-  dplyr::mutate(anom.index = mean(index) - index) %>% 
-  ungroup()
 
-### CCF
-ccf_test<-function(epu_name, season_name, indicator){
-  data.dir<-here::here("data//")
-test<- pp %>% 
-  filter(EPU == epu_name, 
-         Season == season_name)
-
-sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
-  left_join(test) %>% 
-  dplyr::mutate(anom.var = mean(variance) - variance, 
-                anom.skew = mean(skewness) - skewness) 
-
-ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
-ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
-  dplyr::mutate(val = abs(CCF)) %>% 
-  dplyr::filter(val > 0.42) %>% 
-  dplyr::select(!val) %>% 
-  dplyr::mutate(comp = c("var~index"))
-
-
-ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
-ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
-  dplyr::mutate(val = abs(CCF)) %>% 
-   dplyr::filter(val > 0.42) %>% 
-  select(!val)%>% 
-  dplyr::mutate(comp = c("skew~index")) %>% 
-  dplyr::bind_rows(ccf.df)
-
-ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
-sews2<- sews %>% 
-  tidyr::pivot_longer( cols = starts_with("anom"), 
-                       names_to = "Variable", 
-                       values_to = "Values") %>% 
-  dplyr::mutate(Variable = factor(Variable, levels= c("anom.var", "anom.skew", "anom.index"),
-                                  labels = c("Variance", "Skewness", "Index")))
-p1<- sews2 %>%
-  filter(EPU == epu_name,
-         Season == season_name) %>%
-  ggplot()+
-  geom_line(aes(x = Year, y = Values))+
-  geom_point(aes(x = Year, y = Values))+
-  facet_wrap(.~Variable, ncol = 1, scales = "free")+
-  ggtitle(paste(indicator, epu_name, season_name ))
-
-grid.arrange(p1, ccf.df.grob,
-             nrow=2,
-             as.table=TRUE,
-             heights=c(3,1))
-}
 
 ```
 
@@ -278,33 +213,6 @@ p4<-plot30less("GB", "fall", "chl")
 
 
 ## PPD {.tabset .tabset-fade}
-
-### CCF 
-```{r mab-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
-##### What does this mean??
-ccf_test("MAB", "winter", "pp") 
-ccf_test("MAB", "spring", "pp") 
-ccf_test("MAB", "summer", "pp") 
-ccf_test("MAB", "fall", "pp") 
-```
-
-```{r gb-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
-ccf_test("GB", "winter", "pp") 
-ccf_test("GB", "spring", "pp") 
-ccf_test("GB", "summer", "pp") 
-ccf_test("GB", "fall", "pp") 
-```
-
-```{r gom-pp-ccf, echo = FALSE, eval=TRUE, warning = FALSE, message=FALSE, fig.width=11, fig.height=12} 
-ccf_test("GOM", "winter", "pp") 
-ccf_test("GOM", "spring", "pp") 
-ccf_test("GOM", "summer", "pp") 
-ccf_test("GOM", "fall", "pp") 
-```
-
-
-
-
 
 ### MAB
 
