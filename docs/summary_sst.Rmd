@@ -1,0 +1,127 @@
+---
+title: "Spatial Early Warning Signals Results Summary - SST example"
+date: "`r format(Sys.Date(), '%e %B %Y')`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r setup, include=FALSE}
+library(knitr)
+plot.dir<- here::here("plots")
+
+```
+
+```{r plot-function,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plyr)
+library(ecodata)
+library(patchwork)
+library(gridExtra)
+library(earlywarnings)
+library(plotly)
+
+# read in all csvs
+csv.dir <- here::here("data")
+data.dir <- here::here("data//")
+
+## SST prep 
+sst_index<- ecodata::seasonal_oisst_anom %>%
+  tidyr::separate(Var, c("Season", "a", "b", "c"), " ") %>% 
+  dplyr::filter(!Time == 1982) %>% 
+  dplyr::rename(anom.index = Value, 
+         Year = Time) %>% 
+  dplyr::select(-a, -b, -c, -Units)
+
+### CCF
+ccf_test<-function(epu_name, season_name, indicator, index){
+  data.dir<-here::here("data//")
+test<- index %>% 
+  filter(EPU == epu_name, 
+         Season == season_name)
+
+sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
+  left_join(test) %>% 
+  dplyr::mutate(anom.var = mean(variance) - variance, 
+                anom.skew = mean(skewness) - skewness) %>% 
+  tidyr::drop_na(anom.index)
+
+ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
+ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+  dplyr::filter(val > 0.42) %>% 
+  dplyr::select(!val) %>% 
+  dplyr::mutate(comp = c("var~index"))
+
+
+ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
+ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
+  dplyr::mutate(val = abs(CCF)) %>% 
+   dplyr::filter(val > 0.42) %>% 
+  select(!val)%>% 
+  dplyr::mutate(comp = c("skew~index")) %>% 
+  dplyr::bind_rows(ccf.df)
+
+if ( nrow(ccf.df2) >0){
+  ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
+} else { 
+  ccf.df.grob <-  gridExtra::tableGrob(list(c("No Lags detected using CCF")))
+}
+
+#ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
+sews2<- sews %>% 
+  tidyr::pivot_longer( cols = starts_with("anom"), 
+                       names_to = "Variable", 
+                       values_to = "Values") %>% 
+  dplyr::mutate(Variable = factor(Variable, levels= c("anom.var", "anom.skew", "anom.index"),
+                                  labels = c("Variance", "Skewness", "Index")))
+p1<- sews2 %>%
+  filter(EPU == epu_name,
+         Season == season_name) %>%
+  ggplot()+
+  geom_line(aes(x = Year, y = Values))+
+  geom_point(aes(x = Year, y = Values))+
+  facet_wrap(.~Variable, ncol = 1, scales = "free")+
+  ggtitle(paste(indicator, epu_name, season_name ))
+
+gridExtra::grid.arrange(p1, ccf.df.grob,
+             nrow=2,
+             as.table=TRUE,
+             heights=c(3,1))
+}
+
+```
+
+
+
+Decomposition of the SST spatial variance.
+```{r}
+sews<- read.csv(file = paste0(data.dir, "GOM_sst.csv")) 
+
+decompsews<- sews %>% 
+  dplyr::select(variance) 
+
+ts<- ts(decompsews, frequency=12)
+decomp.ts<-stats::decompose(ts)
+
+decomp.df<-   decomp.ts %>% 
+  unlist(recursive = FALSE) %>% 
+  enframe() %>% 
+   separate(name, 
+           into = c("name", "month"), 
+           sep = "(?<=[A-Za-z])(?=[0-9])") %>% 
+  drop_na(value) %>% 
+  dplyr::filter(name != "type", 
+                name != "figure") %>% 
+  dplyr::mutate(value = as.numeric(value), 
+               month = as.numeric(month), 
+               name = fct_relevel(name, 
+            "x", "trend", "seasonal", 
+            "random"))
+
+p1<-
+  ggplot(decomp.df, aes(x = month,  y = value))+
+  ggplot2::geom_line()+
+  facet_wrap(name~., nrow = 4)
+p1
+
+```
