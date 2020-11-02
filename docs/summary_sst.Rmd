@@ -11,7 +11,7 @@ plot.dir<- here::here("plots")
 
 ```
 
-```{r plot-function,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r plot-function,echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE,fig.height = 10, fig.width = 8}
 library(tidyverse)
 library(plyr)
 library(ecodata)
@@ -94,7 +94,7 @@ gridExtra::grid.arrange(p1, ccf.df.grob,
 
 
 Decomposition of the SST spatial variance.
-```{r}
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 sews<- read.csv(file = paste0(data.dir, "GOM_sst.csv")) 
 
 decompsews<- sews %>% 
@@ -121,7 +121,19 @@ decomp.df<-   decomp.ts %>%
 p1<-
   ggplot(decomp.df, aes(x = month,  y = value))+
   ggplot2::geom_line()+
+  ecodata::geom_gls()+
   facet_wrap(name~., nrow = 4)
 p1
 
 ```
+
+
+
+
+
+
+
+
+
+
+
