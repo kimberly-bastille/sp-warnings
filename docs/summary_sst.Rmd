@@ -93,7 +93,9 @@ gridExtra::grid.arrange(p1, ccf.df.grob,
 
 
 
-Decomposition of the SST spatial variance.
+### Decomposition of the GOM SST spatial variance.
+- monthly sst monthly variance
+
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 sews<- read.csv(file = paste0(data.dir, "GOM_sst.csv")) 
 
@@ -128,11 +130,91 @@ p1
 ```
 
 
+### GOM Cumulative Marine Heatwave Index 
+- Annual heatwave timeseries used in 2020 NE SOE 
+
+```{r, echo=FALSE}
+library(earlywarnings)
+
+hw<- ecodata::heatwave %>% 
+  filter(EPU == "GOM", 
+         Var == "cumulative intensity") %>% 
+  dplyr::select(Time, Value)
+
+p2 <- hw %>% 
+  ggplot() +
+  ggplot2::geom_point(aes(x=Time, y=Value))+
+  ggplot2::geom_line(aes(x=Time, y=Value))
+p2
 
 
+```
 
 
+### GOM Cumulative Marine Heatwave Early Warnings 
+earlywarnings::generic_ews() = Output includes ar1, sd, sk, kurt, cv, returnrate, densratio, acf1
 
+### window = 20%
+- generic.ews()
+- window size = 20 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(hw, winsize = 20)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(1982,2020) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
+  ggplot2::xlab("Time")
+ews.p
+
+```
+
+
+### window = 25%
+- generic.ews()
+- window size = 25 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(hw, winsize = 25)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(1982,2020) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
+ews.p
+
+```
+
+### window = 30%
+- generic.ews()
+- window size = 30 
+
+```{r, echo=FALSE,eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(hw, winsize = 30)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(1982,2020) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
+ews.p
+
+```
 
 
 
