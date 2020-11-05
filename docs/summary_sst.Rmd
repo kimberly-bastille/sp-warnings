@@ -154,6 +154,50 @@ p2
 ### GOM Cumulative Marine Heatwave Early Warnings 
 earlywarnings::generic_ews() = Output includes ar1, sd, sk, kurt, cv, returnrate, densratio, acf1
 
+<!-- ### window = 5% -->
+<!-- - generic.ews() -->
+<!-- - window size = 5  -->
+
+<!-- ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE} -->
+<!-- ews <- earlywarnings::generic_ews(hw, winsize = 5) -->
+<!-- trash<-dev.off() -->
+
+<!-- #plot(ews) -->
+<!-- ews.p <- ews %>% -->
+<!--    tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>% -->
+<!--   dplyr::filter(ews.output == c("cv", "sk", "sd")) %>%  -->
+<!--    ggplot2::ggplot() + -->
+<!--    ggplot2::geom_line(aes(x=timeindex, y = value)) + -->
+<!--    ggplot2::xlim(1982,2020) + -->
+<!--    ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free") -->
+<!-- ews.p -->
+
+<!-- ``` -->
+
+
+### window = 10%
+- generic.ews()
+- window size = 10 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(hw, winsize = 10)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(1982,2020) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
+ews.p
+
+```
+
+
+
+
 ### window = 20%
 - generic.ews()
 - window size = 20 
