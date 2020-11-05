@@ -91,7 +91,7 @@ gridExtra::grid.arrange(p1, ccf.df.grob,
 
 ```
 
-
+# SST and Marine heatwaves {.tabset .tabset-fade}
 
 ### Decomposition of the GOM SST spatial variance.
 - monthly sst monthly variance
@@ -129,7 +129,7 @@ p1
 
 ```
 
-
+## Annual heatwave ews 
 ### GOM Cumulative Marine Heatwave Index 
 - Annual heatwave timeseries used in 2020 NE SOE 
 
@@ -260,6 +260,172 @@ ews.p
 
 ```
 
+## Monthly heatwave ews
+
+```{r, echo=FALSE}
+library(earlywarnings)
+library(heatwaveR)
+library(tidyverse)
+library(readxl)
+library(stringr)
+library(readr)
+library(lubridate)
+
+raw.dir<- here::here("data-raw")
+
+heatwave_gb_csv<-"GB_OISST - Vincent Saba - NOAA Federal.csv"
+heatwave_gom_csv<-"GOM_OISST - Vincent Saba - NOAA Federal.csv"
+heatwave_mab_csv<-"MAB_OISST - Vincent Saba - NOAA Federal.csv"
+
+  gom<-read_csv(file.path(raw.dir,heatwave_gom_csv),
+                 col_types = cols(temp = col_double(),t = col_date()))
+  gb<-read_csv(file.path(raw.dir,heatwave_gb_csv),
+                col_types = cols(temp = col_double(),t = col_date()))
+  mab<-read_csv(file.path(raw.dir,heatwave_mab_csv),
+                col_types = cols(temp = col_double(),t = col_date()))
+  #GB
+  ts <- heatwaveR::ts2clm(gb, climatologyPeriod = c("1982-01-01", "2010-12-31"))
+  gb.mhw <- heatwaveR::detect_event(ts)
+  gb.hw<- gb.mhw$event %>%
+    dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative)%>%
+    dplyr::mutate(EPU = "GB")
+  #GOM
+  ts <- heatwaveR::ts2clm(gom, climatologyPeriod = c("1982-01-01", "2010-12-31"))
+  gom.mhw <- heatwaveR::detect_event(ts)
+  gom.hw<- gom.mhw$event %>%
+    dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>%
+    dplyr::mutate(EPU = "GOM")
+  # MAB
+  ts <- heatwaveR::ts2clm(mab, climatologyPeriod = c("1982-01-01", "2010-12-31"))
+  mab.mhw <- heatwaveR::detect_event(ts)
+  mab.hw<- mab.mhw$event %>%
+    dplyr::select(event_no, duration, date_start, date_peak, intensity_max, intensity_cumulative) %>%
+    dplyr::mutate(EPU = "MAB")
+  # Cumulative intensity
+  cum.intensity <- rbind(gb.hw, gom.hw, mab.hw) %>%
+    dplyr::mutate(Mon = lubridate::month(date_peak), 
+                  Year = lubridate::year(date_peak)) %>% 
+    dplyr::group_by(EPU, Mon, Year) %>% 
+    dplyr::summarise(Value = as.numeric(sum(intensity_cumulative)))
+  pad.df <-as_tibble(expand.grid(Mon = 1:12, Year = 1982:2019, EPU = c("GOM", "GB", "MAB"))) %>% 
+    dplyr::mutate(Value = c(0), 
+                  Year = as.numeric(Year), 
+                  Mon = as.numeric(Mon), 
+                  EPU = as.character(EPU), 
+                  Value = as.numeric(Value))%>% 
+    dplyr::left_join( cum.intensity, by = c("Year", "Mon", "EPU"))
+  cumulative <-  pad.df %>% 
+    dplyr::mutate(Value.x = as.vector(Value.x),
+                 Value.y = as.vector(Value.y)) %>% 
+    dplyr::mutate(Value = dplyr::coalesce(pad.df$Value.y, pad.df$Value.x), 
+                  Var = "cumulative intensity") %>% 
+    dplyr::select(Year, Mon, Value, Var, EPU)
+    
+  #Max intensity
+  max.intensity <- rbind(gb.hw, gom.hw, mab.hw) %>%
+    dplyr::mutate(Mon = lubridate::month(date_peak), 
+                  Year = lubridate::year(date_peak)) %>% 
+    dplyr::rename(Value = intensity_max) %>%
+    dplyr::mutate(Var = "maximum intensity")%>%
+    group_by(Year, Mon, EPU) %>% 
+    dplyr::filter(Value == max(Value))
+ pad.df <-as_tibble(expand.grid(Mon = 1:12, Year = 1982:2019, EPU = c("GOM", "GB", "MAB"))) %>% 
+    dplyr::mutate(Value = c(0), 
+                  Year = as.numeric(Year), 
+                  Mon = as.numeric(Mon), 
+                  EPU = as.character(EPU), 
+                  Value = as.numeric(Value))%>% 
+    dplyr::left_join( max.intensity, by = c("Year", "Mon", "EPU"))
+  maximum <-  pad.df %>% 
+    dplyr::mutate(Value.x = as.vector(Value.x),
+                 Value.y = as.vector(Value.y)) %>% 
+    dplyr::mutate(Value = dplyr::coalesce(pad.df$Value.y, pad.df$Value.x), 
+                  Var = "maximum intensity") %>% 
+    dplyr::select(Year, Mon, Value, Var, EPU)
+
+  heatwave<- rbind(cumulative, maximum) %>%
+    dplyr::mutate(Time = make_date(Year, Mon)) %>% 
+    dplyr:: mutate(Units = "degrees C")%>% 
+    dplyr::filter(EPU == "GOM", 
+                  Var == "cumulative intensity") 
+
+
+p2 <- heatwave %>% 
+  ggplot() +
+  ggplot2::geom_point(aes(x=Time, y=Value))+
+  ggplot2::geom_line(aes(x=Time, y=Value))
+p2
+
+
+```
+
+
+### window = 15%
+- generic.ews()
+- window size = 15 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+heatwave<- heatwave %>% dplyr::mutate(Num = 1:dim(heatwave)[1]) %>% 
+  dplyr::select(Time, Value)
+ews <- earlywarnings::generic_ews(heatwave, winsize = 15)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+  tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(6000,18000) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
+ews.p
+
+```
 
 
 
+
+### window = 25%
+- generic.ews()
+- window size = 25 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(heatwave, winsize = 25)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(6000,18000) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
+  ggplot2::xlab("Time")
+ews.p
+
+```
+
+
+
+### window = 50%
+- generic.ews()
+- window size = 50 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+ews <- earlywarnings::generic_ews(heatwave, winsize = 50)
+trash<-dev.off()
+
+#plot(ews)
+ews.p <- ews %>%
+   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
+  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
+   ggplot2::ggplot() +
+   ggplot2::geom_line(aes(x=timeindex, y = value)) +
+   ggplot2::xlim(6000,18000) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
+  ggplot2::xlab("Time")
+ews.p
+
+```
