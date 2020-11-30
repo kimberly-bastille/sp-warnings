@@ -1,5 +1,5 @@
 ---
-title: "Spatial Early Warning Signals Results Summary - SST example"
+title: "Spatial Early Warning Signals Results Summary - SST and Heatwave Analysis"
 date: "`r format(Sys.Date(), '%e %B %Y')`"
 output: html_document
 editor_options: 
@@ -93,176 +93,9 @@ gridExtra::grid.arrange(p1, ccf.df.grob,
 
 # SST and Marine heatwaves {.tabset .tabset-fade}
 
-### Decomposition of the GOM SST spatial variance.
-- monthly sst monthly variance
+## Monthly heatwave early warning signals
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-sews<- read.csv(file = paste0(data.dir, "GOM_sst.csv")) 
-
-decompsews<- sews %>% 
-  dplyr::select(variance) 
-
-ts<- ts(decompsews, frequency=12)
-decomp.ts<-stats::decompose(ts)
-
-decomp.df<-   decomp.ts %>% 
-  unlist(recursive = FALSE) %>% 
-  enframe() %>% 
-   separate(name, 
-           into = c("name", "month"), 
-           sep = "(?<=[A-Za-z])(?=[0-9])") %>% 
-  drop_na(value) %>% 
-  dplyr::filter(name != "type", 
-                name != "figure") %>% 
-  dplyr::mutate(value = as.numeric(value), 
-               month = as.numeric(month), 
-               name = fct_relevel(name, 
-            "x", "trend", "seasonal", 
-            "random"))
-
-p1<-
-  ggplot(decomp.df, aes(x = month,  y = value))+
-  ggplot2::geom_line()+
-  ecodata::geom_gls()+
-  facet_wrap(name~., nrow = 4)
-p1
-
-```
-
-## Annual heatwave ews 
-### GOM Cumulative Marine Heatwave Index 
-- Annual heatwave timeseries used in 2020 NE SOE 
-
-```{r, echo=FALSE}
-library(earlywarnings)
-
-hw<- ecodata::heatwave %>% 
-  filter(EPU == "GOM", 
-         Var == "cumulative intensity") %>% 
-  dplyr::select(Time, Value)
-
-p2 <- hw %>% 
-  ggplot() +
-  ggplot2::geom_point(aes(x=Time, y=Value))+
-  ggplot2::geom_line(aes(x=Time, y=Value))
-p2
-
-
-```
-
-
-### GOM Cumulative Marine Heatwave Early Warnings 
-earlywarnings::generic_ews() = Output includes ar1, sd, sk, kurt, cv, returnrate, densratio, acf1
-
-<!-- ### window = 5% -->
-<!-- - generic.ews() -->
-<!-- - window size = 5  -->
-
-<!-- ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE} -->
-<!-- ews <- earlywarnings::generic_ews(hw, winsize = 5) -->
-<!-- trash<-dev.off() -->
-
-<!-- #plot(ews) -->
-<!-- ews.p <- ews %>% -->
-<!--    tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>% -->
-<!--   dplyr::filter(ews.output == c("cv", "sk", "sd")) %>%  -->
-<!--    ggplot2::ggplot() + -->
-<!--    ggplot2::geom_line(aes(x=timeindex, y = value)) + -->
-<!--    ggplot2::xlim(1982,2020) + -->
-<!--    ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free") -->
-<!-- ews.p -->
-
-<!-- ``` -->
-
-
-### window = 10%
-- generic.ews()
-- window size = 10 
-
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(hw, winsize = 10)
-trash<-dev.off()
-
-#plot(ews)
-ews.p <- ews %>%
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(1982,2020) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
-ews.p
-
-```
-
-
-
-
-### window = 20%
-- generic.ews()
-- window size = 20 
-
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(hw, winsize = 20)
-trash<-dev.off()
-
-#plot(ews)
-ews.p <- ews %>%
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(1982,2020) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
-  ggplot2::xlab("Time")
-ews.p
-
-```
-
-
-### window = 25%
-- generic.ews()
-- window size = 25 
-
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(hw, winsize = 25)
-trash<-dev.off()
-
-#plot(ews)
-ews.p <- ews %>%
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(1982,2020) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
-ews.p
-
-```
-
-### window = 30%
-- generic.ews()
-- window size = 30 
-
-```{r, echo=FALSE,eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(hw, winsize = 30)
-trash<-dev.off()
-
-#plot(ews)
-ews.p <- ews %>%
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(1982,2020) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
-ews.p
-
-```
-
-## Monthly heatwave ews
-
-```{r, echo=FALSE}
 library(earlywarnings)
 library(heatwaveR)
 library(tidyverse)
@@ -353,22 +186,23 @@ heatwave_mab_csv<-"MAB_OISST - Vincent Saba - NOAA Federal.csv"
 p2 <- heatwave %>% 
   ggplot() +
   ggplot2::geom_point(aes(x=Time, y=Value))+
-  ggplot2::geom_line(aes(x=Time, y=Value))
+  ggplot2::geom_line(aes(x=Time, y=Value))+
+  ggplot2::ggtitle("Monthly cumulative heatwaves 1982-2019")+
+  ggplot2::ylab("Cumulative Intensity (degrees X days)")
 p2
 
 
 ```
 
 
-### window = 15%
-- generic.ews()
-- window size = 15 
+Time-series early warnings - analysis of monthly heatwave timeseries. Window size presented is 50% other window sizes were explored and can be found [here](https://kimberly-bastille.github.io/sp-warnings/summary_sst). This analysis uses the `generic_ews()` function in the `earlywarnings package`. 
+
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 
 heatwave<- heatwave %>% dplyr::mutate(Num = 1:dim(heatwave)[1]) %>% 
   dplyr::select(Time, Value)
-ews <- earlywarnings::generic_ews(heatwave, winsize = 15, powerspectrum = TRUE)
+ews <- earlywarnings::generic_ews(heatwave, winsize = 50, powerspectrum = TRUE)
 trash<-dev.off()
 
 #plot(ews)
@@ -377,55 +211,78 @@ ews.p <- ews %>%
   dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
    ggplot2::ggplot() +
    ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(6000,18000) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")
+   ggplot2::xlim(4000,18000) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
+  ggplot2::ggtitle("Generic early warnings analysis of monthly heatwave index")
 ews.p
 
 ```
 
+### Summary 
+
+From the monthly heatwave timeseries,it is clear that since ~2010 we have entered a period of more heatwaves that occur more often, last longer and are hotter than the past. The well documented 2012 heatwave in the Gulf of Maine can be seen in the Variance and Skewness calculated from the generic_ews() function in earlywarnings. 
 
 
 
-### window = 25%
-- generic.ews()
-- window size = 25 
+#### Data Background
+
+Heatwaves were calculated using the `heatwaveR` package and the flickering dataset produced shows the cumulative heatwave calculations for each month. If the heatwave occured in more than one month the peak temperature date (output from `heatwaveR`) was used. 
+
+
+
+Data range = 1982 to 2019 and covers the Gulf of Maine. 
+
+
+
+
+
+## Decomposition of the GOM SST spatial variance.
+
+Spatial early warnings - Analysis or spatial variance for each monthly raster grid. 
+
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(heatwave, winsize = 25)
-trash<-dev.off()
+sews<- read.csv(file = paste0(data.dir, "GOM_sst.csv")) 
 
-#plot(ews)
-ews.p <- ews %>%
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(6000,18000) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
-  ggplot2::xlab("Time")
-ews.p
+decompsews<- sews %>% 
+  dplyr::select(variance) 
 
-```
+ts<- ts(decompsews, frequency=12)
+decomp.ts<-stats::decompose(ts)
 
+decomp.df<-   decomp.ts %>% 
+  unlist(recursive = FALSE) %>% 
+  enframe() %>% 
+   separate(name, 
+           into = c("name", "month"), 
+           sep = "(?<=[A-Za-z])(?=[0-9])") %>% 
+  drop_na(value) %>% 
+  dplyr::filter(name != "type", 
+                name != "figure") %>% 
+  dplyr::mutate(value = as.numeric(value), 
+               month = as.numeric(month), 
+               name = fct_relevel(name, 
+            "x", "trend", "seasonal", 
+            "random"))
 
-
-### window = 50%
-- generic.ews()
-- window size = 50 
-
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-ews <- earlywarnings::generic_ews(heatwave, winsize = 50)
-trash<-dev.off()
-
-#plot(ews)
-ews.p <- ews %>% 
-   tidyr::pivot_longer(., cols = 2:9, names_to="ews.output") %>%
-  dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
-   ggplot2::ggplot() +
-   ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(6000,18000) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
-  ggplot2::xlab("Time")
-ews.p
+p1<-
+  ggplot(decomp.df, aes(x = month,  y = value))+
+  ggplot2::geom_line()+
+  ecodata::geom_gls()+
+  facet_wrap(name~., nrow = 4)
+p1
 
 ```
+
+### Summary 
+
+Variance in sea surface temperature varies seasonally, meaning variance in the summer months is greater than the variance in the winter months. 
+
+### Data Background 
+SST data comes from NOAA Physical Science Laboratory [OISST V2 High Resolution Dataset](https://psl.noaa.gov/data/gridded/data.noaa.oisst.v2.highres.html). 
+
+Data range = 1982 to 2019,  0.25 degree pixels masked to the EPUs of the NEUS shelf. This analysis only covers the Gulf of Maine EPU. 
+
+
+Data gathered into monthly sst rasters using this [code](https://github.com/kimberly-bastille/sp-warnings/blob/master/R/get_monthly_sst.R)
+
