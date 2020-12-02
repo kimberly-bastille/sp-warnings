@@ -19,92 +19,31 @@ library(patchwork)
 library(gridExtra)
 library(earlywarnings)
 library(plotly)
+library(heatwaveR)
+library(readxl)
+library(readr)
 
 # read in all csvs
 csv.dir <- here::here("data")
 data.dir <- here::here("data//")
 
-## SST prep 
-sst_index<- ecodata::seasonal_oisst_anom %>%
-  tidyr::separate(Var, c("Season", "a", "b", "c"), " ") %>% 
-  dplyr::filter(!Time == 1982) %>% 
-  dplyr::rename(anom.index = Value, 
-         Year = Time) %>% 
-  dplyr::select(-a, -b, -c, -Units)
-
-### CCF
-ccf_test<-function(epu_name, season_name, indicator, index){
-  data.dir<-here::here("data//")
-test<- index %>% 
-  filter(EPU == epu_name, 
-         Season == season_name)
-
-sews <- read.csv(file = paste0(data.dir, paste0(epu_name,"_",season_name,"_",indicator,".csv"))) %>% 
-  left_join(test) %>% 
-  dplyr::mutate(anom.var = mean(variance) - variance, 
-                anom.skew = mean(skewness) - skewness) %>% 
-  tidyr::drop_na(anom.index)
-
-ccf.values <- ccf(sews$anom.var, sews$anom.index, plot = FALSE)
-ccf.df<-data.frame(lag=ccf.values$lag, CCF=ccf.values$acf) %>% 
-  dplyr::mutate(val = abs(CCF)) %>% 
-  dplyr::filter(val > 0.42) %>% 
-  dplyr::select(!val) %>% 
-  dplyr::mutate(comp = c("var~index"))
-
-
-ccf.values2 <- ccf(sews$anom.skew, sews$anom.index, plot = FALSE)
-ccf.df2<-data.frame(lag=ccf.values2$lag, CCF=ccf.values2$acf) %>% 
-  dplyr::mutate(val = abs(CCF)) %>% 
-   dplyr::filter(val > 0.42) %>% 
-  select(!val)%>% 
-  dplyr::mutate(comp = c("skew~index")) %>% 
-  dplyr::bind_rows(ccf.df)
-
-if ( nrow(ccf.df2) >0){
-  ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
-} else { 
-  ccf.df.grob <-  gridExtra::tableGrob(list(c("No Lags detected using CCF")))
-}
-
-#ccf.df.grob <-  gridExtra::tableGrob(ccf.df2)
-sews2<- sews %>% 
-  tidyr::pivot_longer( cols = starts_with("anom"), 
-                       names_to = "Variable", 
-                       values_to = "Values") %>% 
-  dplyr::mutate(Variable = factor(Variable, levels= c("anom.var", "anom.skew", "anom.index"),
-                                  labels = c("Variance", "Skewness", "Index")))
-p1<- sews2 %>%
-  filter(EPU == epu_name,
-         Season == season_name) %>%
-  ggplot()+
-  geom_line(aes(x = Year, y = Values))+
-  geom_point(aes(x = Year, y = Values))+
-  facet_wrap(.~Variable, ncol = 1, scales = "free")+
-  ggtitle(paste(indicator, epu_name, season_name ))
-
-gridExtra::grid.arrange(p1, ccf.df.grob,
-             nrow=2,
-             as.table=TRUE,
-             heights=c(3,1))
-}
+raw.dir<- here::here("data-raw")
 
 ```
 
 # SST and Marine heatwaves {.tabset .tabset-fade}
 
+### Summary
+
+Question 1: Is there an early warning signal leading up to the 2012 heatwave event? 
+Answer 1: I don't think so. Based on Figure 2. It looks like the change in variance and skewness occur during/after the events with a smaller reaction to a 2006 event occuring earlier on in the ts. So I don't think that this is showing up what we are looking for. 
+
+Question 2: How can we link the heatwaves EWS to SST SEWS?
+Answer 2: Both show seasonality in variation - Greater variation in the summer months and lower variation in the winter months. The SD is increasing in heatwaves EWS but relative variation (CV) is not. The Spatial Early Warnings analysis calculates variance using the base `r` function `var`. 
+
 ## Monthly heatwave early warning signals
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
-library(earlywarnings)
-library(heatwaveR)
-library(tidyverse)
-library(readxl)
-library(stringr)
-library(readr)
-library(lubridate)
-
-raw.dir<- here::here("data-raw")
 
 heatwave_gb_csv<-"GB_OISST - Vincent Saba - NOAA Federal.csv"
 heatwave_gom_csv<-"GOM_OISST - Vincent Saba - NOAA Federal.csv"
@@ -177,8 +116,8 @@ heatwave_mab_csv<-"MAB_OISST - Vincent Saba - NOAA Federal.csv"
     dplyr::select(Year, Mon, Value, Var, EPU)
 
   heatwave<- rbind(cumulative, maximum) %>%
-    dplyr::mutate(Time = make_date(Year, Mon)) %>% 
-    dplyr:: mutate(Units = "degrees C")%>% 
+    dplyr::mutate(Time = lubridate::make_date(Year, Mon)) %>% 
+    dplyr::mutate(Units = "degrees C")%>% 
     dplyr::filter(EPU == "GOM", 
                   Var == "cumulative intensity") 
 
@@ -187,6 +126,7 @@ p2 <- heatwave %>%
   ggplot() +
   ggplot2::geom_point(aes(x=Time, y=Value))+
   ggplot2::geom_line(aes(x=Time, y=Value))+
+  ecodata::geom_gls(aes(x=Time, y=Value))+
   ggplot2::ggtitle("Monthly cumulative heatwaves 1982-2019")+
   ggplot2::ylab("Cumulative Intensity (degrees X days)")
 p2
@@ -198,10 +138,11 @@ p2
 Time-series early warnings - analysis of monthly heatwave timeseries. Window size presented is 50% other window sizes were explored and can be found [here](https://kimberly-bastille.github.io/sp-warnings/summary_sst). This analysis uses the `generic_ews()` function in the `earlywarnings package`. 
 
 
+**RED LINE = 2012 MAJOR HEATWAVE EVENT**
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 
 heatwave<- heatwave %>% dplyr::mutate(Num = 1:dim(heatwave)[1]) %>% 
-  dplyr::select(Time, Value)
+  dplyr::select(Num, Value)
 ews <- earlywarnings::generic_ews(heatwave, winsize = 50, powerspectrum = TRUE)
 trash<-dev.off()
 
@@ -211,16 +152,90 @@ ews.p <- ews %>%
   dplyr::filter(ews.output == c("cv", "sk", "sd")) %>% 
    ggplot2::ggplot() +
    ggplot2::geom_line(aes(x=timeindex, y = value)) +
-   ggplot2::xlim(4000,18000) +
-   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free")+
-  ggplot2::ggtitle("Generic early warnings analysis of monthly heatwave index")
+   ggplot2::geom_vline(xintercept = 365, color = "red")+
+   #ggplot2::xlim(4000,18000) +
+   ggplot2::facet_wrap(~ews.output, ncol = 1, scales = "free_y")+
+   ggplot2::ggtitle("Generic early warnings analysis of monthly heatwave index")
 ews.p
 
 ```
 
-### Summary 
 
-From the monthly heatwave timeseries,it is clear that since ~2010 we have entered a period of more heatwaves that occur more often, last longer and are hotter than the past. The well documented 2012 heatwave in the Gulf of Maine can be seen in the Variance and Skewness calculated from the generic_ews() function in earlywarnings. 
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+decompews<- ews %>% 
+  dplyr::select(sd) 
+
+# decompheat <- heatwave %>% 
+#   dplyr::select(Value) 
+
+ts<- ts(decompews, frequency=12)
+decomp.ts<-stats::decompose(ts)
+
+decomp.df<-   decomp.ts %>% 
+  unlist(recursive = FALSE) %>% 
+  enframe() %>% 
+   separate(name, 
+           into = c("name", "month"), 
+           sep = "(?<=[A-Za-z])(?=[0-9])") %>% 
+  drop_na(value) %>% 
+  dplyr::filter(name != "type", 
+                name != "figure") %>% 
+  dplyr::mutate(value = as.numeric(value), 
+               month = (as.numeric(month)+227), 
+               name = fct_relevel(name, 
+            "x", "trend", "seasonal", 
+            "random"))
+
+p1<-
+  ggplot(decomp.df, aes(x = month,  y = value))+
+  ggplot2::geom_line()+
+  ecodata::geom_gls()+
+  facet_wrap(name~., nrow = 4, scales = "free_y")+
+  ggplot2::geom_vline(xintercept = 365, color = "red")+
+  ggplot2::ggtitle("Decomposed EWS Standard Deviation")
+p1
+
+```
+
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+decompews<- ews %>% 
+  dplyr::select(cv) 
+
+# decompheat <- heatwave %>% 
+#   dplyr::select(Value) 
+
+ts<- ts(decompews, frequency=12)
+decomp.ts<-stats::decompose(ts)
+
+decomp.df<-   decomp.ts %>% 
+  unlist(recursive = FALSE) %>% 
+  enframe() %>% 
+   separate(name, 
+           into = c("name", "month"), 
+           sep = "(?<=[A-Za-z])(?=[0-9])") %>% 
+  drop_na(value) %>% 
+  dplyr::filter(name != "type", 
+                name != "figure") %>% 
+  dplyr::mutate(value = as.numeric(value), 
+               month = (as.numeric(month)+227), 
+               name = fct_relevel(name, 
+            "x", "trend", "seasonal", 
+            "random"))
+
+p1<-
+  ggplot(decomp.df, aes(x = month,  y = value))+
+  ggplot2::geom_line()+
+  ecodata::geom_gls()+
+  facet_wrap(name~., nrow = 4, scales = "free")+
+  ggplot2::geom_vline(xintercept = 365, color = "red")+
+  ggplot2::ggtitle("Decomposed EWS CV")
+p1
+
+```
+
 
 
 
@@ -228,12 +243,7 @@ From the monthly heatwave timeseries,it is clear that since ~2010 we have entere
 
 Heatwaves were calculated using the `heatwaveR` package and the flickering dataset produced shows the cumulative heatwave calculations for each month. If the heatwave occured in more than one month the peak temperature date (output from `heatwaveR`) was used. 
 
-
-
 Data range = 1982 to 2019 and covers the Gulf of Maine. 
-
-
-
 
 
 ## Decomposition of the GOM SST spatial variance.
@@ -274,9 +284,6 @@ p1
 
 ```
 
-### Summary 
-
-Variance in sea surface temperature varies seasonally, meaning variance in the summer months is greater than the variance in the winter months. 
 
 ### Data Background 
 SST data comes from NOAA Physical Science Laboratory [OISST V2 High Resolution Dataset](https://psl.noaa.gov/data/gridded/data.noaa.oisst.v2.highres.html). 
